@@ -1,10 +1,11 @@
 ######### SETUP ####
 # Package names
-packages <- c("xts", "chron", "zoo", "imputeTS", "gridExtra", "slider", "cowplot",
-              "astsa", "vars", "forecast", "R.matlab", "ggplot2", "tsibble",
-              "feasts","seasonal", "lubridate", "dplyr", "tidyr", "tibbletime",
-              "fpp3", "viridis", "stringr", "twosamples", "purrr", "Matching", "pander")
+# packages <- c("xts", "chron", "zoo", "imputeTS", "gridExtra", "slider", "cowplot",
+#               "astsa", "vars", "forecast", "R.matlab", "ggplot2", "tsibble",
+#               "feasts","seasonal", "lubridate", "dplyr", "tidyr", "tibbletime",
+#               "fpp3", "viridis", "stringr", "twosamples", "purrr", "Matching", "pander")
 
+packages <- c("R.matlab", "tsibble", "cowplot")
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
@@ -19,6 +20,7 @@ invisible(lapply(packages, library, character.only = TRUE)) # GBM
 # configuration variables
 G_sample_frequency = 187
 G_debug = FALSE
+setwd("/home/msolerortiz/workspace_R/SR_stats_lightning")
 
 ######### FUNCTIONS ####
 get_datetime_from_file <- function(file) {
@@ -939,25 +941,26 @@ p3 <- t_storms %>%
   scale_x_continuous(breaks = seq(0,23,1), name = "Time [Hour]") +
   theme(legend.position="top",
         legend.box = "horizontal",
+        legend.spacing.x = unit(0.5, 'cm'),
         axis.text.x = element_text(size = 10),
         axis.title.y = element_text(size = 10)
   )
 
 # spatial parameters of global thunderstorm centers (Schumann Resonance for Tyros).
 t_sp = tibble(
-  Af = c(100, 5, 5, 28, 8, 8),
-  Am = c(104, 30, -15, -66, 12, -6),
-  As = c(87.5, 10, 0, 120, 20, 0)
+  Af = c(10, 10, 5, 28, 8, 8),
+  Am = c(4, 30, -15, -66, 12, -6),
+  As = c(2.5, 10, 0, 120, 20, 0)
 )
 
 #Monthly coordinates of storm centers
-lat_Af = mean( -( t_sp$Af[1] + t_sp$Af[2]*cos((1:12+3)*pi/6) + t_sp$Af[3]*cos((1:12+3)*pi/3) )/(pi/2) )
+lat_Af = mean( -( t_sp$Af[1] + t_sp$Af[2]*cos((1:12+3)*pi/6) + t_sp$Af[3]*cos((1:12+3)*pi/3) ) )
 long_Af = mean( t_sp$Af[4] + t_sp$Af[5]*cos((1:12+3)*pi/6) + t_sp$Af[6]*cos((1:12+3)*pi/3) )
 
-lat_Am = mean( -( t_sp$Am[1] + t_sp$Am[2]*cos((1:12+3)*pi/6) + t_sp$Am[3]*cos((1:12+3)*pi/3) )/(pi/2) )
+lat_Am = mean( -( t_sp$Am[1] + t_sp$Am[2]*cos((1:12+3)*pi/6) + t_sp$Am[3]*cos((1:12+3)*pi/3) ) )
 long_Am = mean( t_sp$Am[4] + t_sp$Am[5]*cos((1:12+3)*pi/6) + t_sp$Am[6]*cos((1:12+3)*pi/3) )
 
-lat_As = mean( -( t_sp$As[1] + t_sp$As[2]*cos((1:12+3)*pi/6) + t_sp$As[3]*cos((1:12+3)*pi/3) )/(pi/2) )
+lat_As = mean( -( t_sp$As[1] + t_sp$As[2]*cos((1:12+3)*pi/6) + t_sp$As[3]*cos((1:12+3)*pi/3) ) )
 long_As = mean( t_sp$As[4] + t_sp$As[5]*cos((1:12+3)*pi/6) + t_sp$As[6]*cos((1:12+3)*pi/3) )
 
 #with the average latitudes and longitudes of the GTC we can calculate the azimuth
@@ -967,15 +970,19 @@ long_As = mean( t_sp$As[4] + t_sp$As[5]*cos((1:12+3)*pi/6) + t_sp$As[6]*cos((1:1
 # American Azimuth = 12,698 km, 3.548 rad
 # Asian Azimuth = 15,326 km, 2.355 rad
 
+# REAL African Azimuth = 6.141 km, 2.486 rad
+# REAL American Azimuth = 7.980 km, 4.363 rad
+# REAL Asian Azimuth = 13,013 km, 1.239 rad
+
 # Coefficients for magnetic field intensity from azimuth as (NS, EW) (Nickolaenko 1997)
 
-C_Af = c( abs( sin(2.907) ), abs( cos(2.907) ) )
-C_Am = c( abs( sin(3.548) ), abs( cos(3.548) ) )
-C_As = c( abs( sin(2.355) ), abs( cos(2.355) ) )
+C_Af = c( abs( sin(2.486) ), abs( cos(2.486) ) )
+C_Am = c( abs( sin(4.363) ), abs( cos(4.363) ) )
+C_As = c( abs( sin(1.239) ), abs( cos(1.239) ) )
 
 #Corrected intensity - North south comparison
 p1 <- t_storms %>% 
-  mutate(Africa = Africa * C_Af[1], America = America * C_Am[1], Asia = Asia * C_As[1] * 1/2) %>%
+  mutate(Africa = Africa * C_Af[1], America = America * C_Am[1], Asia = Asia * C_As[1] ) %>%
   full_join( ts_year_hours_NS %>% 
                index_by(hour_t) %>%
                summarize( nor_NS = mean(nor*4) ), by = "hour_t") %>%
@@ -989,7 +996,7 @@ p1 <- t_storms %>%
                       labels = c("Africa (left)", "America (left)", "Asia (left)", 
                                  "NS average (right)")
   ) +
-  scale_y_continuous(breaks = seq(0.0, 3, 0.5), limits = c(0.0, 3), name = NULL,
+  scale_y_continuous(breaks = seq(0.0, 2.5, 0.5), limits = c(0.0, 2.5), name = NULL,
                      sec.axis = sec_axis(trans = ~./4, name = "Gaussian Ocurrence [%]")
   ) +
   scale_x_continuous(breaks = seq(0,23,1), name = "Time [Hour]") +
@@ -1016,7 +1023,7 @@ p2 <- t_storms %>%
                       labels = c("Africa (left)", "America (left)", "Asia (left)", 
                                  "EW average (right)")
   ) +
-  scale_y_continuous(breaks = seq(0.0, 3, 0.5), limits = c(0.0, 3), name = "Intensity [AU]",
+  scale_y_continuous(breaks = seq(0.0, 2.5, 0.5), limits = c(0.0, 2.5), name = "Intensity [AU]",
                      sec.axis = sec_axis(trans = ~./4, name = NULL)
   ) +
   scale_x_continuous(breaks = seq(0,23,1), name = "Time [Hour]") +
@@ -1036,3 +1043,4 @@ legend_dist <- get_legend(p3 + theme(
 )
 
 plot_grid(legend_dist, prow, nrow = 2, rel_heights = c(0.1, 0.90))
+
