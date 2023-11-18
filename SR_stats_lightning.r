@@ -5,7 +5,8 @@
 #               "feasts","seasonal", "lubridate", "dplyr", "tidyr", "tibbletime",
 #               "fpp3", "viridis", "stringr", "twosamples", "purrr", "Matching", "pander")
 
-packages <- c("R.matlab", "tsibble", "cowplot")
+packages <- c("R.matlab", "tsibble", "cowplot", "tidyverse", "zoo", "lubridate",
+              "chron")
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
@@ -966,9 +967,6 @@ long_As = mean( t_sp$As[4] + t_sp$As[5]*cos((1:12+3)*pi/6) + t_sp$As[6]*cos((1:1
 #with the average latitudes and longitudes of the GTC we can calculate the azimuth
 #from our observatory (omnicalculator.com/other/azimuth) Coordinates (Lat, Lon)
 # Observatory = (37.22, -2.55)
-# African Azimuth = 11,537 km, 2.907 rad
-# American Azimuth = 12,698 km, 3.548 rad
-# Asian Azimuth = 15,326 km, 2.355 rad
 
 # REAL African Azimuth = 6.141 km, 2.486 rad
 # REAL American Azimuth = 7.980 km, 4.363 rad
